@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <utility>
 using namespace std;
 
 
@@ -101,7 +102,7 @@ public :
 };
 
 
-class Cryptanalysis
+class Cryptanalysis : public Cipher
 {
 private:
   // Vector to store the plaintexts and cipertexts 
@@ -173,15 +174,40 @@ public :
     // TODO
   }
 
-  void findGoodPair(int diffOut, int nbPairs)
+  int findGoodPair(int ** diffOut, int nbPairs)
   {
     printf("\n Searching for good pair:\n");
     
     /* Question 4 : compléter le code afin de produire une paire avec la bonne caractéristique en se basant sur le chiffrement */
+    /*
+    x  x2  x3  ....
+    x' x2' x3' ....
+    y  y2  y3  ....
+    y' y2' y3' ....
+    */
+    int p0, p1, c0, c1;
+    int indice = -1;
 
-    // TODO
-    if(true)
-    printf(" No good pair found!\n");
+    for(int i = 0; i < nbPairs; i++){
+      p0 = diffOut[0][i];
+      p1 = diffOut[0][i] ^ (diffOut[0][i] ^ diffOut[1][i]);
+
+
+      c0 = encrypt(p0);
+      c1 = encrypt(p1);
+
+      if ((c0 ^ c1) == (diffOut[2][i] ^ diffOut[3][i])) {
+        
+        indice = i;
+        break;
+      }
+    }
+  
+    if(indice < 0){
+      printf(" No good pair found!\n");
+    }
+
+    return indice;
   }
 
   int testKey(int testK0, int testK1, int nbPairs)
@@ -232,3 +258,13 @@ int main()
 
   return 0;    
 }
+
+
+
+
+  
+
+
+  
+  
+  
