@@ -28,18 +28,6 @@ private :
     0xE, 0x2, 0xB, 0x0, 0x4, 0x6, 0x7, 0xF, 0x8, 0x5, 0x3, 0x9, 0xD, 0xC, 0x1, 0xA
   };
 
-  uint8_t roundFunc(uint8_t input)
-  {
-    // TODO
-    return 0;
-  }
-
-  uint8_t roundFunc_inv(uint8_t input)
-  {
-    // TODO
-    return 1;
-  }
-
 public :
   Cipher()
   {   
@@ -55,18 +43,61 @@ public :
     k0 = key0;
     k1 = key1;
   }
-
-  uint8_t encrypt(uint8_t input)
-  {
-    // TODO
-    return 0;
+  // Fonction de substitution
+  int substitute(int input) {
+      return S[input];
   }
 
-  uint8_t decrypt(uint8_t input)
-  {
-    // TODO
-    return 0;        
+  int substitute_inv(int input){
+    return S_inv[input];
   }
+
+  // Fonction de chiffrement
+  int encrypt(int plaintext) {
+      // Séparation des 4 premiers bits et des 4 derniers bits du bloc de 8 bits
+      int text[2];
+
+      text[0] = plaintext >> 4;
+      text[1]= plaintext & 0x0F;
+
+      for(int i = 0; i <2; i++){
+        // Application de la sous-clé K0 par XOR
+        text[i] ^= k0;
+
+        // Passage à la boîte de substitution
+        text[i] = substitute(text[i]);
+
+        // Application de la sous-clé K1 par XOR
+        text[i] ^= k1;
+
+      }
+      // Concaténation des résultats pour former le bloc chiffré
+      return (text[0] << 4) | text[1];
+  }
+
+  // Fonction de déchiffrement
+  int decrypt(int ciphertext) {
+      // Séparation des 4 premiers bits et des 4 derniers bits du bloc de 8 bits
+      int text[2];
+
+      text[0] = ciphertext >> 4;
+      text[1]= ciphertext & 0x0F;
+
+      for(int i = 0; i <2; i++){
+        // Application de la sous-clé K1 par XOR
+        text[i] ^= k1;
+
+        // Passage à la boîte de substitution inverse
+        text[i] = substitute_inv(text[i]);
+
+        // Application de la sous-clé K0 par XOR
+        text[i] ^= k0;
+
+      }
+      // Concaténation des résultats pour former le bloc déchiffré
+      return (text[0] << 4) | text[1]; 
+  }
+
 };
 
 
