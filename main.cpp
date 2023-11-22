@@ -27,18 +27,6 @@ private :
     0xE, 0x2, 0xB, 0x0, 0x4, 0x6, 0x7, 0xF, 0x8, 0x5, 0x3, 0x9, 0xD, 0xC, 0x1, 0xA
   };
 
-  uint8_t roundFunc(uint8_t input)
-  {
-    // TODO
-    return 0;
-  }
-
-  uint8_t roundFunc_inv(uint8_t input)
-  {
-    // TODO
-    return 1;
-  }
-
 public :
   Cipher()
   {   
@@ -54,18 +42,61 @@ public :
     k0 = key0;
     k1 = key1;
   }
-
-  uint8_t encrypt(uint8_t input)
-  {
-    // TODO
-    return 0;
+  // Fonction de substitution
+  int substitute(int input) {
+      return S[input];
   }
 
-  uint8_t decrypt(uint8_t input)
-  {
-    // TODO
-    return 0;        
+  int substitute_inv(int input){
+    return S_inv[input];
   }
+
+  // Fonction de chiffrement
+  int encrypt(int plaintext) {
+      // Séparation des 4 premiers bits et des 4 derniers bits du bloc de 8 bits
+      int text[2];
+
+      text[0] = plaintext >> 4;
+      text[1]= plaintext & 0x0F;
+
+      for(int i = 0; i <2; i++){
+        // Application de la sous-clé K0 par XOR
+        text[i] ^= k0;
+
+        // Passage à la boîte de substitution
+        text[i] = substitute(text[i]);
+
+        // Application de la sous-clé K1 par XOR
+        text[i] ^= k1;
+
+      }
+      // Concaténation des résultats pour former le bloc chiffré
+      return (text[0] << 4) | text[1];
+  }
+
+  // Fonction de déchiffrement
+  int decrypt(int ciphertext) {
+      // Séparation des 4 premiers bits et des 4 derniers bits du bloc de 8 bits
+      int text[2];
+
+      text[0] = ciphertext >> 4;
+      text[1]= ciphertext & 0x0F;
+
+      for(int i = 0; i <2; i++){
+        // Application de la sous-clé K1 par XOR
+        text[i] ^= k1;
+
+        // Passage à la boîte de substitution inverse
+        text[i] = substitute_inv(text[i]);
+
+        // Application de la sous-clé K0 par XOR
+        text[i] ^= k0;
+
+      }
+      // Concaténation des résultats pour former le bloc déchiffré
+      return (text[0] << 4) | text[1]; 
+  }
+
 };
 
 
@@ -96,13 +127,35 @@ public :
   /* Difference Distribution Table of the S-boxe */
   void findBestDiffs(void){
     uint8_t i,j;
-    uint8_t X,Xp,Y,Yp,DX,DY; 
+    uint8_t X,Xp,Y,Yp,DX,DY;    //x : 0101  x' : 1101    x+x'= 0b1000 = 0x8     
+                                //y = s(x)   y' = s(x')     y+y' = 0byyyy  = 0xY
+                                //T[0x8][0xY] += 1
+    //On teste pour chaque possibilités sur 4 bits, des messages X et X' et de leur correspondances après boîte S de Y et Y'
+
+    //On initialise la matrice des différences
     uint8_t T[16][16]; // Tableau pour comptabiliser les occurrences
     for (i=0;i<16;++i){
       for (j=0;j<16;++j){
 	      T[i][j]=0;
       }
     }
+    
+    //On va parcourir les 16 possibiltiés différentes :
+    Cipher ciph;
+    for (int i = 0; i < 16; i++) //Possibilité de X
+    {
+      for (int j = 0; j < 16; j++) //Possibilité de X'
+      {
+        X = i;
+        Xp = j;
+        Y = static_cast<uint8_t>(ciph.substitute((int)X));
+        Yp = static_cast<uint8_t>(ciph.substitute((int)Xp));
+        DX = X ^ Xp;
+        DY = Y ^ Yp;
+        T[DX][DY] += 1;
+      }
+    }
+
 
     printf("\n Creating XOR differential table:\n");
       
@@ -191,8 +244,8 @@ int main()
   uint8_t diffOut = 0;
     
 
-  // Cryptanalysis cryptanalysis;
-  // cryptanalysis.findBestDiffs();                                                                //Find some good differentials in the S-Boxes
+  Cryptanalysis cryptanalysis;
+  cryptanalysis.findBestDiffs();                                                                //Find some good differentials in the S-Boxes
   // cryptanalysis.genCharData(diffIn, diffOut);                                                          //Find inputs that lead a certain characteristic
   // cryptanalysis.genPairs(cipher, diffIn, nbPairs);                                                                //Generate chosen-plaintext pairs
   // cryptanalysis.findGoodPair(diffOut,nbPairs);                                                            //Choose a known pair that satisfies the characteristic
