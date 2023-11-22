@@ -140,6 +140,9 @@ public :
       }
     }
     
+    /* Question 1 : compléter le code afin d'afficher la matrice T des différences */
+    // TODO
+
     //On va parcourir les 16 possibiltiés différentes :
     Cipher ciph;
     for (int i = 0; i < 16; i++) //Possibilité de X
@@ -158,9 +161,6 @@ public :
 
 
     printf("\n Creating XOR differential table:\n");
-      
-    /* Question 1 : compléter le code afin d'afficher la matrice T des différences */
-    // TODO
 
     /* Affichage des différences dans un tableau */
     for (i=0;i<16;++i){
@@ -176,6 +176,47 @@ public :
     /* TODO */
     /* Identifier les différentielles apparaissant avec plus forte probabilité */
     /* Elles seront exploitées dans la suite de l'attaque */
+    int max = 0;
+    int bestDX, bestDY;
+    bestDX = bestDY = 0;
+    for (i=0;i<16;++i)
+    {
+      for (j=0;j<16;++j)
+      {
+      	if (T[i][j] > max && T[i][j] != 16) //On enlève la paire (DX,DY) = (0,0) car inintéressante
+        {
+          max = T[i][j];
+          bestDX = i;
+          bestDY = j;
+        }
+      }
+    }
+    std::cout << "La meilleure paire (DX,DY) est : (" << bestDX << "," << bestDY << ") avec " << max << " occurrences." << std::endl;
+
+    Cipher ciph;
+    for (int i = 0; i < 16; i++) //Possibilité de X
+    {
+      for (int j = 0; j < 16; j++) //Possibilité de X'
+      {
+        X = i;
+        Xp = j;
+        Y = static_cast<uint8_t>(ciph.substitute((int)X));
+        Yp = static_cast<uint8_t>(ciph.substitute((int)Xp));
+        DX = X ^ Xp;
+        if (DX = max) //On sauvegarde la combinaison (X,X',Y,Y')
+        {
+
+        }
+      }
+    }
+    /*
+    Tableau à renvoyer à Beber
+    [x   x2  ..]
+    [x'  x'2 ..]
+    [y   y2  ..]
+    [y'  y'2 ..]
+
+    */
   }
 
   void genCharData(int diffIn, int diffOut)
