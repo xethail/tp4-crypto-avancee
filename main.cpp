@@ -125,7 +125,7 @@ public :
   }
 
   /* Difference Distribution Table of the S-boxe */
-  void findBestDiffs(void){
+  uint8_t ** findBestDiffs(void){
     uint8_t i,j;
     uint8_t X,Xp,Y,Yp,DX,DY;    //x : 0101  x' : 1101    x+x'= 0b1000 = 0x8     
                                 //y = s(x)   y' = s(x')     y+y' = 0byyyy  = 0xY
@@ -171,7 +171,7 @@ public :
       printf("]\n");
     }
 
-    printf("\n Displaying most probable differentials:\n");
+    printf("\nDisplaying most probable differentials:\n");
 
     /* TODO */
     /* Identifier les différentielles apparaissant avec plus forte probabilité */
@@ -192,8 +192,11 @@ public :
       }
     }
     std::cout << "La meilleure paire (DX,DY) est : (" << bestDX << "," << bestDY << ") avec " << max << " occurrences." << std::endl;
+    const int max_occ = max; //Définition d'un int constant pour éviter le warning à la création du tableau de combinaisons
+    uint8_t combinaisonsBestDiff[4][max_occ]; //On crée un tableau de 4 lignes et x colonnes, x étant le nombre d'occurrences de la meilleure paire (DX,DY)
+                                          //Ce tableau sur chaque colonne le X,X',Y,Y' donnant une des occurrence du meilleur différentiel
+    int combinaisonsSauvegardees = 0; //Un compteur qui nous permet de changer de colonne dans le tableau des combinaisons lorsqu'une combinaison est inscrite
 
-    Cipher ciph;
     for (int i = 0; i < 16; i++) //Possibilité de X
     {
       for (int j = 0; j < 16; j++) //Possibilité de X'
@@ -203,12 +206,28 @@ public :
         Y = static_cast<uint8_t>(ciph.substitute((int)X));
         Yp = static_cast<uint8_t>(ciph.substitute((int)Xp));
         DX = X ^ Xp;
-        if (DX = max) //On sauvegarde la combinaison (X,X',Y,Y')
+        if (DX == bestDX) //On sauvegarde la combinaison (X,X',Y,Y')
         {
-
+          combinaisonsBestDiff[0][combinaisonsSauvegardees] = X;
+          combinaisonsBestDiff[1][combinaisonsSauvegardees] = Xp;
+          combinaisonsBestDiff[2][combinaisonsSauvegardees] = Y;
+          combinaisonsBestDiff[3][combinaisonsSauvegardees] = Yp;
+          combinaisonsSauvegardees++;
         }
       }
     }
+
+    cout << "Ensemble des combinaisons donnant le meilleur différentiel :" << std::endl;
+    for (i=0;i<4;++i){
+      printf("[");
+      for (j=0;j<max_occ;++j)
+      {
+      	if (combinaisonsBestDiff[i][j] < 10) {printf(" %u  ",combinaisonsBestDiff[i][j]);}
+        else{printf(" %u ",combinaisonsBestDiff[i][j]);}
+      }
+      printf("]\n");
+    }
+    return combinaisonsBestDiff;
     /*
     Tableau à renvoyer à Beber
     [x   x2  ..]
