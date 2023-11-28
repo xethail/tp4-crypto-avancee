@@ -126,20 +126,42 @@ public :
   }
 
   /* Difference Distribution Table of the S-boxe */
-  void findBestDiffs(void){
+  uint8_t ** findBestDiffs(void){
     uint8_t i,j;
-    uint8_t X,Xp,Y,Yp,DX,DY; 
+    uint8_t X,Xp,Y,Yp,DX,DY;    //x : 0101  x' : 1101    x+x'= 0b1000 = 0x8     
+                                //y = s(x)   y' = s(x')     y+y' = 0byyyy  = 0xY
+                                //T[0x8][0xY] += 1
+    //On teste pour chaque possibilités sur 4 bits, des messages X et X' et de leur correspondances après boîte S de Y et Y'
+
+    //On initialise la matrice des différences
     uint8_t T[16][16]; // Tableau pour comptabiliser les occurrences
     for (i=0;i<16;++i){
       for (j=0;j<16;++j){
 	      T[i][j]=0;
       }
     }
-
-    printf("\n Creating XOR differential table:\n");
-      
+    
     /* Question 1 : compléter le code afin d'afficher la matrice T des différences */
     // TODO
+
+    //On va parcourir les 16 possibiltiés différentes :
+    Cipher ciph;
+    for (int i = 0; i < 16; i++) //Possibilité de X
+    {
+      for (int j = 0; j < 16; j++) //Possibilité de X'
+      {
+        X = i;
+        Xp = j;
+        Y = static_cast<uint8_t>(ciph.substitute((int)X));
+        Yp = static_cast<uint8_t>(ciph.substitute((int)Xp));
+        DX = X ^ Xp;
+        DY = Y ^ Yp;
+        T[DX][DY] += 1;
+      }
+    }
+
+
+    printf("\n Creating XOR differential table:\n");
 
     /* Affichage des différences dans un tableau */
     for (i=0;i<16;++i){
@@ -150,11 +172,71 @@ public :
       printf("]\n");
     }
 
-    printf("\n Displaying most probable differentials:\n");
+    printf("\nDisplaying most probable differentials:\n");
 
     /* TODO */
     /* Identifier les différentielles apparaissant avec plus forte probabilité */
     /* Elles seront exploitées dans la suite de l'attaque */
+    int max = 0;
+    int bestDX, bestDY;
+    bestDX = bestDY = 0;
+    for (i=0;i<16;++i)
+    {
+      for (j=0;j<16;++j)
+      {
+      	if (T[i][j] > max && T[i][j] != 16) //On enlève la paire (DX,DY) = (0,0) car inintéressante
+        {
+          max = T[i][j];
+          bestDX = i;
+          bestDY = j;
+        }
+      }
+    }
+    std::cout << "La meilleure paire (DX,DY) est : (" << bestDX << "," << bestDY << ") avec " << max << " occurrences." << std::endl;
+    const int max_occ = max; //Définition d'un int constant pour éviter le warning à la création du tableau de combinaisons
+    uint8_t combinaisonsBestDiff[4][max_occ]; //On crée un tableau de 4 lignes et x colonnes, x étant le nombre d'occurrences de la meilleure paire (DX,DY)
+                                          //Ce tableau sur chaque colonne le X,X',Y,Y' donnant une des occurrence du meilleur différentiel
+    int combinaisonsSauvegardees = 0; //Un compteur qui nous permet de changer de colonne dans le tableau des combinaisons lorsqu'une combinaison est inscrite
+
+    for (int i = 0; i < 16; i++) //Possibilité de X
+    {
+      for (int j = 0; j < 16; j++) //Possibilité de X'
+      {
+        X = i;
+        Xp = j;
+        Y = static_cast<uint8_t>(ciph.substitute((int)X));
+        Yp = static_cast<uint8_t>(ciph.substitute((int)Xp));
+        DX = X ^ Xp;
+        if (DX == bestDX) //On sauvegarde la combinaison (X,X',Y,Y')
+        {
+          combinaisonsBestDiff[0][combinaisonsSauvegardees] = X;
+          combinaisonsBestDiff[1][combinaisonsSauvegardees] = Xp;
+          combinaisonsBestDiff[2][combinaisonsSauvegardees] = Y;
+          combinaisonsBestDiff[3][combinaisonsSauvegardees] = Yp;
+          combinaisonsSauvegardees++;
+        }
+      }
+    }
+
+    cout << "Ensemble des combinaisons donnant le meilleur différentiel :" << std::endl;
+    for (i=0;i<4;++i){
+      printf("[");
+      for (j=0;j<max_occ;++j)
+      {
+      	if (combinaisonsBestDiff[i][j] < 10) {printf(" %u  ",combinaisonsBestDiff[i][j]);}
+        else{printf(" %u ",combinaisonsBestDiff[i][j]);}
+      }
+      printf("]\n");
+    }
+    return combinaisonsBestDiff;
+    /*
+    Tableau à renvoyer à Beber
+    [x   x2  ..]
+    [x'  x'2 ..]
+    [y   y2  ..]
+    [y'  y'2 ..]
+
+    */
   }
 
   void genCharData(int diffIn, int diffOut)
@@ -223,8 +305,8 @@ int main()
   uint8_t diffOut = 0;
     
 
-  // Cryptanalysis cryptanalysis;
-  // cryptanalysis.findBestDiffs();                                                                //Find some good differentials in the S-Boxes
+  Cryptanalysis cryptanalysis;
+  cryptanalysis.findBestDiffs();                                                                //Find some good differentials in the S-Boxes
   // cryptanalysis.genCharData(diffIn, diffOut);                                                          //Find inputs that lead a certain characteristic
   // cryptanalysis.genPairs(cipher, diffIn, nbPairs);                                                                //Generate chosen-plaintext pairs
   // cryptanalysis.findGoodPair(diffOut,nbPairs);                                                            //Choose a known pair that satisfies the characteristic
